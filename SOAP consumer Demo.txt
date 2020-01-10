@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Page Title</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script
+	src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript" src="../resources/js/Chart.min.js"></script>
+<style>
+#chartdiv {
+	width: 200;
+	height: 150;
+}
+canvas {  
+   width: 200px;
+   height: 200px;
+}
+</style>
+</head>
+
+<body>
+	<input value="soap request" type="button" onclick="soapRequest();" />
+	<input value="soap request" type="button" onclick="drowChart();" />
+	 <div id="chartdiv">
+		<canvas id="bar-chart" width="200" height="150"></canvas>
+	</div> 
+	  <!-- <div id="chartContainer" style="height: 300px; width: 100%;"></div> -->
+	<script>
+		// set the size of the canvas
+	
+
+		var labelsSet = [];
+		var dataSet = [];
+		function soapRequest() {
+
+			var str = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:bus="http://business.service/"><soapenv:Header/> <soapenv:Body> <bus:getVenteCountByTaille/></soapenv:Body></soapenv:Envelope>';
+			showData();
+			function createCORSRequest(method, url) {
+				var xhr = new XMLHttpRequest();
+				if ("withCredentials" in xhr) {
+					xhr.open(method, url, false);
+				} else if (typeof XDomainRequest != "undefined") {
+					alert
+					xhr = new XDomainRequest();
+					xhr.open(method, url);
+				} else {
+					console.log("CORS not supported");
+					alert("CORS not supported");
+					xhr = null;
+				}
+				return xhr;
+			}
+			var xhr = createCORSRequest("POST",
+					"http://localhost:8080/vente_hebillement_WS/status?wsdl");
+			if (!xhr) {
+				console.log("XHR issue");
+				return;
+			}
+
+			xhr.onload = function() {
+				var results = xhr.responseText;
+				console.log(results);
+
+				parser = new DOMParser();
+				xmlDoc = parser.parseFromString(results, 'text/xml');
+				console.log(xmlDoc);
+
+				for (var i = 0; i < xmlDoc.getElementsByTagName("return").length; i++) {
+					labelsSet
+							.push(xmlDoc.getElementsByTagName("return")[i].childNodes[1].innerHTML);
+					dataSet
+							.push(parseInt(xmlDoc
+									.getElementsByTagName("return")[i].childNodes[0].innerHTML));
+				}
+
+			}
+
+			xhr.setRequestHeader('Content-Type', 'text/xml');
+			xhr.send(str);
+			showData();
+		}
+		function showData() {
+			console.log(labelsSet);
+			console.log(dataSet);
+		}
+		
+		function drowChart() {
+			new Chart(document.getElementById("bar-chart"), {
+				type : 'bar',
+				data : {
+					labels : labelsSet,
+					datasets : [ {
+						label : "Population (millions)",
+						backgroundColor : [ "#3e95cd", "#8e5ea2", "#3cba9f",
+								"#e8c3b9", "#c45850" ],
+						data : dataSet
+					} ]
+				},
+				options : {
+					animation : true,
+					animationEasing : 'easeInOutQuart',
+					animationSteps : 80,
+					scales : {
+						yAxes : [ {
+							ticks : {
+								beginAtZero : true
+							}
+						} ]
+					},
+					legend : {
+						display : false
+					},
+					title : {
+						display : true,
+						text : 'le ventes'
+					}
+
+				}
+
+			});
+		}
+		window.onload=function(){
+			soapRequest();
+			drowChart();
+		}
+	</script>
+</body>
+
+</html>
